@@ -12,15 +12,16 @@ export type LectureStatus = 'active' | 'cancelled' | 'rescheduled';
 
 export interface Lecture {
   id: string;
-  date: string;           // ISO date string YYYY-MM-DD
-  startTime: string;      // HH:mm
-  endTime: string;        // HH:mm
+  date: string;
+  startTime: string;
+  endTime: string;
   subject: string;
   faculty: string;
   room: string;
   rawAudience: string;
   audiences: NormalizedAudience[];
   status: LectureStatus;
+  cancellationReason?: string;
 }
 
 export interface NormalizedAudience {
@@ -41,9 +42,9 @@ export interface ShuttleTime {
 }
 
 export interface ShuttleRoute {
-  name: string;          // e.g. "LHT ↔ SUHRC"
-  fromLabel: string;      // "LHT"
-  toLabel: string;        // "SUHRC"
+  name: string;
+  fromLabel: string;
+  toLabel: string;
   toTimes: ShuttleTime[];
   fromTimes: ShuttleTime[];
   stops: string[];
