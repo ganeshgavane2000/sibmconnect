@@ -15,8 +15,9 @@ export function LectureCard({ lecture, compact = false }: Props) {
         style={{
           background: isCancelled ? 'rgba(239,68,68,0.05)' : 'rgba(255,255,255,0.03)',
           border: `1px solid ${isCancelled ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.07)'}`,
-          opacity: isCancelled ? 0.8 : 1,
+          opacity: isCancelled ? 0.7 : 1,
         }}>
+        {/* Time */}
         <div className="text-right shrink-0 w-16">
           <p className="text-xs font-mono" style={{ color: '#9ca3af' }}>
             {formatDisplayTime(lecture.startTime)}
@@ -26,6 +27,7 @@ export function LectureCard({ lecture, compact = false }: Props) {
           </p>
         </div>
 
+        {/* Divider */}
         <div className="flex flex-col items-center pt-1">
           <div className="w-1.5 h-1.5 rounded-full mt-0.5"
             style={{ background: isCancelled ? '#ef4444' : '#6366f1' }} />
@@ -33,13 +35,14 @@ export function LectureCard({ lecture, compact = false }: Props) {
             style={{ background: 'rgba(255,255,255,0.08)' }} />
         </div>
 
+        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <p className={`text-sm font-medium leading-tight ${isCancelled ? 'line-through text-gray-500' : 'text-white'}`}>
               {lecture.subject}
             </p>
             {isCancelled && (
-              <span className="text-xs px-1.5 py-0.5 rounded shrink-0 font-medium"
+              <span className="text-xs px-1.5 py-0.5 rounded shrink-0"
                 style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>
                 Cancelled
               </span>
@@ -50,12 +53,6 @@ export function LectureCard({ lecture, compact = false }: Props) {
           )}
           {lecture.room && (
             <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>📍 {lecture.room}</p>
-          )}
-          {isCancelled && lecture.cancellationReason && (
-            <p className="text-xs mt-1 px-2 py-1 rounded-lg"
-              style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}>
-              ℹ️ {lecture.cancellationReason}
-            </p>
           )}
         </div>
       </div>
@@ -84,18 +81,13 @@ export function LectureCard({ lecture, compact = false }: Props) {
           </span>
         )}
       </div>
+
       <div className="flex items-center gap-3 text-xs" style={{ color: '#6b7280' }}>
         <span className="font-mono">
           {formatDisplayTime(lecture.startTime)} – {formatDisplayTime(lecture.endTime)}
         </span>
         {lecture.room && <span>· {lecture.room}</span>}
       </div>
-      {isCancelled && lecture.cancellationReason && (
-        <p className="text-xs mt-2 px-3 py-1.5 rounded-xl"
-          style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}>
-          ℹ️ {lecture.cancellationReason}
-        </p>
-      )}
     </div>
   );
 }

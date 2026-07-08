@@ -141,6 +141,7 @@ export function useApp() {
   return {
     profile,
     lectures,
+    setLectures,
     view,
     setView,
     loading,

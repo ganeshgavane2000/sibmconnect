@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import type { ParseReport } from '../types';
+import type { Lecture, ParseReport } from '../types';
 import { getLastUpdated } from '../store/storage';
 import { format } from 'date-fns';
 import { MessMenuUpload } from './MessMenuUpload';
 import { CampusInfoUpload } from './CampusInfoUpload';
 import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { TimetableManager } from './TimetableManager';
 
 interface Props {
   onUpload: (file: File) => Promise<void>;
@@ -13,20 +14,22 @@ interface Props {
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
   report: ParseReport | null;
   onClose: () => void;
+  lectures: Lecture[];
+  onLecturesUpdate: (lectures: Lecture[]) => void;
 }
 
 const ADMIN_PASSWORD = 'sibmadmin2024';
 
-type Tab = 'timetable' | 'mess' | 'bus' | 'analytics';
+type Tab = 'manage' | 'timetable' | 'mess' | 'bus' | 'analytics';
 
-export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report, onClose }: Props) {
+export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report, onClose, lectures, onLecturesUpdate }: Props) {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [fileError, setFileError] = useState('');
   const [sheetReport, setSheetReport] = useState<ParseReport | null>(null);
-  const [tab, setTab] = useState<Tab>('timetable');
+  const [tab, setTab] = useState<Tab>('manage');
   const fileRef = useRef<HTMLInputElement>(null);
   const lastUpdated = getLastUpdated();
 
@@ -46,10 +49,9 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
 
   const handleSyncSheets = async () => {
     const confirmed = window.confirm(
-      'This will pull the timetable from the college Google Sheet and OVERWRITE your current Excel-uploaded timetable for all students. Continue?'
+      'This will pull from Google Sheets and OVERWRITE your current timetable including any manual changes. Continue?'
     );
     if (!confirmed) return;
-
     setSheetReport(null);
     const r = await onSyncSheets();
     setSheetReport(r);
@@ -63,7 +65,8 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
   }[syncStatus];
 
   const TABS: { key: Tab; label: string; icon: string }[] = [
-    { key: 'timetable', label: 'Timetable', icon: '📅' },
+    { key: 'manage', label: 'Manage', icon: '✏️' },
+    { key: 'timetable', label: 'Upload', icon: '📅' },
     { key: 'mess', label: 'Mess', icon: '🍽️' },
     { key: 'bus', label: 'Bus', icon: '🚌' },
     { key: 'analytics', label: 'Analytics', icon: '📊' },
@@ -90,7 +93,7 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAuth()}
             placeholder="Password"
-            className="w-full px-4 py-3 rounded-xl text-white placeholder-gray-500 text-sm outline-none mb-3 focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full px-4 py-3 rounded-xl text-white placeholder-gray-500 text-sm outline-none mb-3"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
             autoFocus
           />
@@ -107,7 +110,7 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1">
             {TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)}
-                className="shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5"
+                className="shrink-0 px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5"
                 style={{
                   background: tab === t.key ? 'linear-gradient(135deg, #6366f1, #a78bfa)' : 'rgba(255,255,255,0.05)',
                   color: tab === t.key ? 'white' : '#9ca3af',
@@ -117,7 +120,12 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
             ))}
           </div>
 
-          {/* ── Timetable Tab ── */}
+          {/* ── Manage Tab ── */}
+          {tab === 'manage' && (
+            <TimetableManager lectures={lectures} onUpdate={onLecturesUpdate} />
+          )}
+
+          {/* ── Upload Tab ── */}
           {tab === 'timetable' && (
             <>
               {lastUpdated && (
@@ -147,7 +155,8 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
                   onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
                 {loading ? (
                   <div>
-                    <div className="w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.2)' }}>
+                    <div className="w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center"
+                      style={{ background: 'rgba(99,102,241,0.2)' }}>
                       <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
                     </div>
                     <p className="font-medium text-white text-sm">Parsing...</p>
@@ -156,7 +165,7 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
                   <div>
                     <div className="text-2xl mb-2">📤</div>
                     <p className="font-medium text-white text-sm">Drop Excel file here</p>
-                    <p className="text-xs mt-1" style={{ color: '#6b7280' }}>or tap to browse · .xlsx .xls — primary method</p>
+                    <p className="text-xs mt-1" style={{ color: '#6b7280' }}>or tap to browse · .xlsx .xls</p>
                   </div>
                 )}
               </div>
@@ -165,28 +174,30 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
 
               {report && (
                 <div className="glass rounded-3xl p-5 space-y-3">
-                  <p className="font-semibold text-white text-sm">Excel Import Report</p>
+                  <p className="font-semibold text-white text-sm">Import Report</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { label: 'Imported', val: report.imported, color: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.2)', text: '#34d399' },
                       { label: 'Skipped', val: report.skipped, color: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.2)', text: '#f87171' },
                       { label: 'Total', val: report.total, color: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', text: 'white' },
                     ].map(({ label, val, color, border, text }) => (
-                      <div key={label} className="rounded-xl p-2.5 text-center" style={{ background: color, border: `1px solid ${border}` }}>
+                      <div key={label} className="rounded-xl p-2.5 text-center"
+                        style={{ background: color, border: `1px solid ${border}` }}>
                         <p className="text-lg font-black" style={{ color: text }}>{val}</p>
                         <p className="text-xs" style={{ color: '#9ca3af' }}>{label}</p>
                       </div>
                     ))}
                   </div>
                   {report.warnings.slice(0, 5).map((w, i) => (
-                    <p key={i} className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(251,191,36,0.08)', color: '#fbbf24' }}>{w}</p>
+                    <p key={i} className="text-xs px-2 py-1 rounded"
+                      style={{ background: 'rgba(251,191,36,0.08)', color: '#fbbf24' }}>{w}</p>
                   ))}
                 </div>
               )}
 
               <div className="flex items-center gap-3 pt-2">
                 <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-                <p className="text-xs" style={{ color: '#4b5563' }}>advanced · rarely needed</p>
+                <p className="text-xs" style={{ color: '#4b5563' }}>advanced</p>
                 <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
               </div>
 
@@ -195,13 +206,13 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
                 <div>
                   <p className="font-medium text-white text-xs">⚠️ Sync from Google Sheets</p>
                   <p className="text-xs mt-1" style={{ color: '#6b7280' }}>
-                    Overwrites your Excel-uploaded timetable with the college Google Sheet. Use only if the Sheet is more current.
+                    Overwrites everything including manual changes. Use rarely.
                   </p>
                 </div>
                 <button
                   onClick={handleSyncSheets}
                   disabled={syncStatus === 'syncing'}
-                  className="w-full py-2.5 rounded-xl font-medium text-xs transition-all active:scale-95 disabled:opacity-60"
+                  className="w-full py-2.5 rounded-xl font-medium text-xs transition-all disabled:opacity-60"
                   style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}>
                   {syncStatus === 'syncing'
                     ? <span className="flex items-center justify-center gap-2">
@@ -217,27 +228,20 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
                       { label: 'Skipped', val: sheetReport.skipped, color: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.2)', text: '#f87171' },
                       { label: 'Total', val: sheetReport.total, color: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', text: 'white' },
                     ].map(({ label, val, color, border, text }) => (
-                      <div key={label} className="rounded-xl p-2.5 text-center" style={{ background: color, border: `1px solid ${border}` }}>
+                      <div key={label} className="rounded-xl p-2.5 text-center"
+                        style={{ background: color, border: `1px solid ${border}` }}>
                         <p className="text-lg font-black" style={{ color: text }}>{val}</p>
                         <p className="text-xs" style={{ color: '#9ca3af' }}>{label}</p>
                       </div>
                     ))}
                   </div>
                 )}
-                {sheetReport?.warnings.map((w, i) => (
-                  <p key={i} className="text-xs px-2 py-1 rounded" style={{ background: 'rgba(251,191,36,0.08)', color: '#fbbf24' }}>{w}</p>
-                ))}
               </div>
             </>
           )}
 
-          {/* ── Mess Tab ── */}
           {tab === 'mess' && <MessMenuUpload />}
-
-          {/* ── Bus Tab ── */}
           {tab === 'bus' && <CampusInfoUpload />}
-
-          {/* ── Analytics Tab ── */}
           {tab === 'analytics' && <AnalyticsDashboard />}
         </>
       )}

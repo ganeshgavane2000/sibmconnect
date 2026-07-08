@@ -12,9 +12,9 @@ export type LectureStatus = 'active' | 'cancelled' | 'rescheduled';
 
 export interface Lecture {
   id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+  date: string;           // ISO date string YYYY-MM-DD
+  startTime: string;      // HH:mm
+  endTime: string;        // HH:mm
   subject: string;
   faculty: string;
   room: string;
@@ -42,9 +42,9 @@ export interface ShuttleTime {
 }
 
 export interface ShuttleRoute {
-  name: string;
-  fromLabel: string;
-  toLabel: string;
+  name: string;          // e.g. "LHT ↔ SUHRC"
+  fromLabel: string;      // "LHT"
+  toLabel: string;        // "SUHRC"
   toTimes: ShuttleTime[];
   fromTimes: ShuttleTime[];
   stops: string[];

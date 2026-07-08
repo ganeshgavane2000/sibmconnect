@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 
 function App() {
   const {
-    profile, lectures, view, setView,
+    profile, lectures, setLectures, view, setView,
     loading, syncing, syncStatus,
     importLoading, importReport, cloudError, lastSyncTime,
     handleOnboarding, handleProfileUpdate,
@@ -111,6 +111,8 @@ function App() {
             syncStatus={syncStatus}
             report={importReport}
             onClose={() => { setShowAdmin(false); setView('dashboard'); }}
+            lectures={lectures}
+            onLecturesUpdate={(updated) => { setLectures(updated); }}
           />
         ) : (
           <>
