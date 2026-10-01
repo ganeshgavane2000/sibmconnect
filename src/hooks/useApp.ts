@@ -5,8 +5,7 @@ import { fetchAndParseGoogleSheet } from '../utils/sheetsParser';
 import type { Lecture, StudentProfile, ParseReport } from '../types';
 import { parseExcelFile } from '../utils/excelParser';
 
-export type AppView = 'dashboard' | 'today' | 'week' | 'mess' | 'bus';
-
+export type AppView = 'dashboard' | 'week' | 'exams' | 'mess' | 'bus'; 
 // Auto-sync from Google Sheets every 15 minutes
 const SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
