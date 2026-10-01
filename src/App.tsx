@@ -6,6 +6,7 @@ import { TodayView } from './components/TodayView';
 import { WeekView } from './components/WeekView';
 import { MessMenuView } from './components/MessMenuView';
 import { BusTimingsView } from './components/BusTimingsView';
+import { ExamView } from './components/ExamView';
 import { AdminPanel } from './components/AdminPanel';
 import { BottomNav } from './components/BottomNav';
 import { ProfileEditor } from './components/ProfileEditor';
@@ -117,10 +118,11 @@ function App() {
         ) : (
           <>
             {view === 'dashboard' && <Dashboard profile={profile} lectures={lectures} />}
-            {view === 'today' && <TodayView profile={profile} lectures={lectures} />}
             {view === 'week' && <WeekView profile={profile} lectures={lectures} />}
-            {view === 'mess' && <MessMenuView />}
-            {view === 'bus' && <BusTimingsView />}
+           {view === 'week' && <WeekView profile={profile} lectures={lectures} />}
+{view === 'exams' && <ExamView profile={profile} />}
+{view === 'mess' && <MessMenuView />}
+{view === 'bus' && <BusTimingsView />}
           </>
         )}
       </div>
