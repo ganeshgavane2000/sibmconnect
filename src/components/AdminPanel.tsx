@@ -64,12 +64,12 @@ export function AdminPanel({ onUpload, onSyncSheets, loading, syncStatus, report
     error: '❌ Sync failed',
   }[syncStatus];
 
-  const TABS: { key: Tab; label: string; icon: string }[] = [
+const TABS: { key: Tab; label: string; icon: string }[] = [
     { key: 'manage', label: 'Manage', icon: '✏️' },
-    { key: 'timetable', label: 'Upload', icon: '📅' },
     { key: 'mess', label: 'Mess', icon: '🍽️' },
-    { key: 'bus', label: 'Bus', icon: '🚌' },
     { key: 'analytics', label: 'Analytics', icon: '📊' },
+    { key: 'bus', label: 'Bus', icon: '🚌' },
+    { key: 'timetable', label: 'Upload', icon: '📅' },
   ];
 
   return (
