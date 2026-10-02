@@ -93,3 +93,28 @@ export async function fetchStudentActivity(): Promise<any[]> {
   if (error || !data) return [];
   return data;
 }
+export async function logTabActivity(profile: {
+  name: string;
+  rollNumber: string;
+}, tab: string): Promise<void> {
+  try {
+    await supabase.from('tab_activity').insert({
+      roll_number: profile.rollNumber,
+      name: profile.name,
+      tab,
+      accessed_at: new Date().toISOString(),
+    });
+  } catch {
+    // Silent fail
+  }
+}
+
+export async function fetchTabActivity(): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('tab_activity')
+    .select('*')
+    .order('accessed_at', { ascending: false })
+    .limit(500);
+  if (error || !data) return [];
+  return data;
+}
