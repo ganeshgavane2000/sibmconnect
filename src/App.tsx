@@ -133,7 +133,7 @@ const handleViewChange = (newView: AppView) => {
         )}
       </div>
 
-      {!showAdmin && <BottomNav current={view} onChange={setView} />}
+      {!showAdmin && <BottomNav current={view} onChange={handleViewChange} />}
 
       {showProfile && (
         <ProfileEditor
