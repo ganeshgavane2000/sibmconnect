@@ -6,6 +6,7 @@ import { TodayView } from './components/TodayView';
 import { WeekView } from './components/WeekView';
 import { MessMenuView } from './components/MessMenuView';
 import { BusTimingsView } from './components/BusTimingsView';
+import { logTabActivity } from './store/supabase';
 import { ExamView } from './components/ExamView';
 import { AdminPanel } from './components/AdminPanel';
 import { BottomNav } from './components/BottomNav';
@@ -23,7 +24,12 @@ function App() {
 
   const [showAdmin, setShowAdmin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-
+const handleViewChange = (newView: AppView) => {
+  setView(newView);
+  if (profile) {
+    logTabActivity({ name: profile.name, rollNumber: profile.rollNumber }, newView);
+  }
+};
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
