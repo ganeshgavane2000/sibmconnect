@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from './hooks/useApp';
+import { useApp, AppView } from './hooks/useApp';
 import { Onboarding } from './components/Onboarding';
 import { Dashboard } from './components/Dashboard';
 import { TodayView } from './components/TodayView';
