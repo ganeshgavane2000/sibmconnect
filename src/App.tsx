@@ -76,9 +76,13 @@ const handleViewChange = (newView: AppView) => {
                 style={{ background: 'linear-gradient(135deg, #6366f1, #a78bfa)', color: 'white' }}>
                 {profile.name.charAt(0).toUpperCase()}
               </div>
-              <span className="text-xs font-medium" style={{ color: '#9ca3af' }}>
-                {profile.name.split(' ')[0]}
-              </span>
+            <p className="text-xs font-medium" style={{ color: '#9ca3af' }}>
+  {profile.name.split(' ')[0]}
+</p>
+<span className="text-xs px-1.5 py-0.5 rounded font-bold ml-1"
+  style={{ background: profile.year === 'Y1' ? 'rgba(52,211,153,0.15)' : 'rgba(99,102,241,0.15)', color: profile.year === 'Y1' ? '#34d399' : '#a78bfa', fontSize: '9px' }}>
+  {profile.year}
+</span>
             </button>
             <button
               onClick={() => setShowAdmin(true)}
