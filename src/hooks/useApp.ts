@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { loadProfile, saveProfile, saveTimetable, loadTimetable, getLastUpdated } from '../store/storage';
-import { fetchTimetableFromCloud, pushTimetableToCloud, logStudentActivity } from '../store/supabase';
+import { fetchTimetableFromCloud, pushTimetableToCloud, logStudentActivity, fetchY1TimetableFromCloud } from '../store/supabase';
 import { fetchAndParseGoogleSheet } from '../utils/sheetsParser';
 import type { Lecture, StudentProfile, ParseReport } from '../types';
 import { parseExcelFile } from '../utils/excelParser';
 
-export type AppView = 'dashboard' | 'week' | 'exams' | 'mess' | 'bus'; 
-// Auto-sync from Google Sheets every 15 minutes
+export type AppView = 'dashboard' | 'week' | 'exams' | 'mess' | 'bus';
+
 const SYNC_INTERVAL_MS = 15 * 60 * 1000;
+const Y1_STORAGE_KEY = 'sibm_timetable_y1';
 
 export function useApp() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -22,14 +23,30 @@ export function useApp() {
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Pull from cloud (Supabase) - for students reading the live timetable
-  const syncFromCloud = useCallback(async (silent = false) => {
+  const syncFromCloud = useCallback(async (p?: StudentProfile | null, silent = false) => {
+    const profile_ = p;
     if (!silent) setSyncing(true);
     try {
-      const { lectures: cloud, updatedAt } = await fetchTimetableFromCloud();
+      let cloud: any[] = [];
+      let updatedAt: string | null = null;
+
+      if (profile_?.year === 'Y1') {
+        const res = await fetchY1TimetableFromCloud();
+        cloud = res.lectures;
+        updatedAt = res.updatedAt;
+      } else {
+        const res = await fetchTimetableFromCloud();
+        cloud = res.lectures;
+        updatedAt = res.updatedAt;
+      }
+
       if (cloud.length > 0) {
         setLectures(cloud);
-        saveTimetable(cloud);
+        if (profile_?.year === 'Y1') {
+          localStorage.setItem(Y1_STORAGE_KEY, JSON.stringify(cloud));
+        } else {
+          saveTimetable(cloud);
+        }
         if (updatedAt) setLastSyncTime(updatedAt);
         setCloudError(null);
       }
@@ -40,71 +57,68 @@ export function useApp() {
     }
   }, []);
 
-  // Pull from Google Sheets → parse → push to Supabase (admin action)
-  const syncFromSheets = useCallback(async (): Promise<ParseReport> => {
-    setSyncStatus('syncing');
-    try {
-      const { lectures: parsed, report } = await fetchAndParseGoogleSheet();
-
-      if (parsed.length > 0) {
-        saveTimetable(parsed);
-        setLectures(parsed);
-
-        const ok = await pushTimetableToCloud(parsed);
-        if (!ok) {
-          report.warnings.push('⚠️ Could not push to cloud. Changes saved locally only.');
-        }
-        setLastSyncTime(new Date().toISOString());
-      }
-
-      setSyncStatus('success');
-      setTimeout(() => setSyncStatus('idle'), 3000);
-      return report;
-    } catch (err) {
-      setSyncStatus('error');
-      setTimeout(() => setSyncStatus('idle'), 4000);
-      return {
-        total: 0, imported: 0, skipped: 0,
-        warnings: [`Sync failed: ${err instanceof Error ? err.message : String(err)}`],
-      };
-    }
-  }, []);
-
   useEffect(() => {
     const init = async () => {
       const p = loadProfile();
       setProfile(p);
 
-      // Log usage for admin analytics (silent, non-blocking)
       if (p) logStudentActivity(p);
 
-      // Load local cache immediately
-      const cached = loadTimetable();
-      if (cached.length > 0) setLectures(cached);
+      // Load cache
+      if (p?.year === 'Y1') {
+        const cached = localStorage.getItem(Y1_STORAGE_KEY);
+        if (cached) setLectures(JSON.parse(cached));
+      } else {
+        const cached = loadTimetable();
+        if (cached.length > 0) setLectures(cached);
+      }
 
-      // Sync from cloud
-      await syncFromCloud();
+      await syncFromCloud(p);
       setLoading(false);
     };
     init();
 
-    // Auto sync from cloud every 15 min (so students always have fresh data)
-    syncTimerRef.current = setInterval(() => syncFromCloud(true), SYNC_INTERVAL_MS);
-    return () => {
-      if (syncTimerRef.current) clearInterval(syncTimerRef.current);
-    };
+    syncTimerRef.current = setInterval(() => {
+      const p = loadProfile();
+      syncFromCloud(p, true);
+    }, SYNC_INTERVAL_MS);
+
+    return () => { if (syncTimerRef.current) clearInterval(syncTimerRef.current); };
   }, []);
 
   const handleOnboarding = useCallback((p: StudentProfile) => {
     saveProfile(p);
     setProfile(p);
     logStudentActivity(p);
-  }, []);
+    syncFromCloud(p);
+  }, [syncFromCloud]);
 
   const handleProfileUpdate = useCallback((p: StudentProfile) => {
     saveProfile(p);
     setProfile(p);
     logStudentActivity(p);
+    syncFromCloud(p);
+  }, [syncFromCloud]);
+
+  const syncFromSheets = useCallback(async (): Promise<ParseReport> => {
+    setSyncStatus('syncing');
+    try {
+      const { lectures: parsed, report } = await fetchAndParseGoogleSheet();
+      if (parsed.length > 0) {
+        saveTimetable(parsed);
+        setLectures(parsed);
+        const ok = await pushTimetableToCloud(parsed);
+        if (!ok) report.warnings.push('⚠️ Could not push to cloud.');
+        setLastSyncTime(new Date().toISOString());
+      }
+      setSyncStatus('success');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+      return report;
+    } catch (err) {
+      setSyncStatus('error');
+      setTimeout(() => setSyncStatus('idle'), 4000);
+      return { total: 0, imported: 0, skipped: 0, warnings: [`Sync failed: ${err instanceof Error ? err.message : String(err)}`] };
+    }
   }, []);
 
   const handleExcelUpload = useCallback(async (file: File) => {
@@ -112,48 +126,27 @@ export function useApp() {
     setImportReport(null);
     try {
       const { lectures: parsed, report } = await parseExcelFile(file);
-
-      // Safety: never overwrite an existing timetable with an empty result
-      if (parsed.length === 0) {
-        setImportReport(report);
-        return;
-      }
+      if (parsed.length === 0) { setImportReport(report); return; }
 
       saveTimetable(parsed);
       setLectures(parsed);
-
       const ok = await pushTimetableToCloud(parsed);
-      if (!ok) report.warnings.push('⚠️ Cloud sync failed — saved locally only.');
-
+      if (!ok) report.warnings.push('⚠️ Cloud sync failed.');
       setImportReport(report);
       setLastSyncTime(new Date().toISOString());
     } catch (err) {
-      setImportReport({
-        total: 0, imported: 0, skipped: 0,
-        warnings: [`Error: ${err instanceof Error ? err.message : String(err)}`],
-      });
+      setImportReport({ total: 0, imported: 0, skipped: 0, warnings: [`Error: ${err instanceof Error ? err.message : String(err)}`] });
     } finally {
       setImportLoading(false);
     }
   }, []);
 
   return {
-    profile,
-    lectures,
-    setLectures,
-    view,
-    setView,
-    loading,
-    syncing,
-    syncStatus,
-    importLoading,
-    importReport,
-    cloudError,
-    lastSyncTime,
-    handleOnboarding,
-    handleProfileUpdate,
-    handleExcelUpload,
-    syncFromSheets,
-    syncFromCloud,
+    profile, lectures, setLectures, view, setView,
+    loading, syncing, syncStatus,
+    importLoading, importReport, cloudError, lastSyncTime,
+    handleOnboarding, handleProfileUpdate,
+    handleExcelUpload, syncFromSheets,
+    syncFromCloud: () => syncFromCloud(profile),
   };
 }
