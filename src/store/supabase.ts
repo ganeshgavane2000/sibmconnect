@@ -116,5 +116,17 @@ export async function fetchTabActivity(): Promise<any[]> {
     .order('accessed_at', { ascending: false })
     .limit(500);
   if (error || !data) return [];
+
+  // Year 1 timetable
+export async function fetchY1TimetableFromCloud(): Promise<{ lectures: any[]; updatedAt: string | null }> {
+  const { data, error } = await supabase
+    .from('timetable_y1')
+    .select('lectures, updated_at')
+    .order('id', { ascending: false })
+    .limit(1)
+    .single();
+  if (error || !data) return { lectures: [], updatedAt: null };
+  return { lectures: data.lectures || [], updatedAt: data.updated_at };
+}
   return data;
 }
