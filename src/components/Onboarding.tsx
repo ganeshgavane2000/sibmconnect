@@ -89,8 +89,8 @@ export function Onboarding({ onComplete }: Props) {
               <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>Select your MBA year</p>
               <div className="space-y-3">
                 {[
-                  { value: 'Y1', label: 'MBA Year 1', sub: 'Batch 2025-27', icon: '1️⃣' },
-                  { value: 'Y2', label: 'MBA Year 2', sub: 'Batch 2024-26', icon: '2️⃣' },
+{ value: 'Y1', label: 'MBA Year 1', sub: 'Batch 2026-28', icon: '1️⃣' },
+{ value: 'Y2', label: 'MBA Year 2', sub: 'Batch 2025-27', icon: '2️⃣' },
                 ].map(({ value, label, sub, icon }) => (
                   <button key={value} onClick={() => setYear(value as Year)}
                     className="w-full px-4 py-4 rounded-xl text-left transition-all"
