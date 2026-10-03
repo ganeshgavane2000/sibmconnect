@@ -1,20 +1,24 @@
 export type Specialization = 'Marketing A' | 'Marketing B' | 'Finance' | 'HR' | 'Operations';
 export type Minor = 'Marketing' | 'Finance' | 'HR' | 'Data Analytics' | 'None';
+export type Elective = 'Doing Business in India' | 'Indian Film Industry' | 'Governance and Corporate Sustainability' | 'None';
+export type Year = 'Y1' | 'Y2';
 
 export interface StudentProfile {
   name: string;
   rollNumber: string;
   specialization: Specialization;
   minor: Minor;
+  elective?: Elective;
+  year: Year;
 }
 
 export type LectureStatus = 'active' | 'cancelled' | 'rescheduled';
 
 export interface Lecture {
   id: string;
-  date: string;           // ISO date string YYYY-MM-DD
-  startTime: string;      // HH:mm
-  endTime: string;        // HH:mm
+  date: string;
+  startTime: string;
+  endTime: string;
   subject: string;
   faculty: string;
   room: string;
@@ -27,6 +31,7 @@ export interface Lecture {
 export interface NormalizedAudience {
   specialization: Specialization | 'All';
   minor?: Minor;
+  elective?: Elective;
 }
 
 export interface ParseReport {
@@ -42,9 +47,9 @@ export interface ShuttleTime {
 }
 
 export interface ShuttleRoute {
-  name: string;          // e.g. "LHT ↔ SUHRC"
-  fromLabel: string;      // "LHT"
-  toLabel: string;        // "SUHRC"
+  name: string;
+  fromLabel: string;
+  toLabel: string;
   toTimes: ShuttleTime[];
   fromTimes: ShuttleTime[];
   stops: string[];
