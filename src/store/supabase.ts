@@ -115,7 +115,9 @@ export async function fetchTabActivity(): Promise<any[]> {
     .select('*')
     .order('accessed_at', { ascending: false })
     .limit(500);
-  if (error || !data) return [];}
+   if (error || !data) return [];
+  return data;
+}
 
   // Year 1 timetable
 export async function fetchY1TimetableFromCloud(): Promise<{ lectures: any[]; updatedAt: string | null }> {
