@@ -128,5 +128,3 @@ export async function fetchY1TimetableFromCloud(): Promise<{ lectures: any[]; up
   if (error || !data) return { lectures: [], updatedAt: null };
   return { lectures: data.lectures || [], updatedAt: data.updated_at };
 }
-  return data;
-}
