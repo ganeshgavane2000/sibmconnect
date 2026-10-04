@@ -4,7 +4,7 @@ import { format, parseISO, startOfWeek, addDays } from 'date-fns';
 
 export function getStudentLectures(lectures: Lecture[], profile: StudentProfile): Lecture[] {
   return lectures.filter(l =>
-    isStudentApplicable(l.audiences, profile.specialization, profile.minor)
+   isStudentApplicable(l.audiences, profile.specialization, profile.minor, profile.elective)
   );
 }
 

@@ -1,14 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { loadProfile, saveProfile, saveTimetable, loadTimetable, getLastUpdated } from '../store/storage';
+import { loadProfile, saveProfile, saveTimetable, loadTimetable } from '../store/storage';
 import { fetchTimetableFromCloud, pushTimetableToCloud, logStudentActivity, fetchY1TimetableFromCloud } from '../store/supabase';
 import { fetchAndParseGoogleSheet } from '../utils/sheetsParser';
-import type { Lecture, StudentProfile, ParseReport } from '../types';
+import type { Lecture, StudentProfile, ParseReport, Year } from '../types';
 import { parseExcelFile } from '../utils/excelParser';
 
 export type AppView = 'dashboard' | 'week' | 'exams' | 'mess' | 'bus';
 
 const SYNC_INTERVAL_MS = 15 * 60 * 1000;
 const Y1_STORAGE_KEY = 'sibm_timetable_y1';
+
+// Fix for existing Y2 users who don't have 'year' in their saved profile
+function migrateProfile(p: StudentProfile | null): StudentProfile | null {
+  if (!p) return null;
+  if (!p.year) return { ...p, year: 'Y2' as Year, elective: 'None' };
+  return p;
+}
 
 export function useApp() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -24,13 +31,12 @@ export function useApp() {
   const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const syncFromCloud = useCallback(async (p?: StudentProfile | null, silent = false) => {
-    const profile_ = p;
     if (!silent) setSyncing(true);
     try {
       let cloud: any[] = [];
       let updatedAt: string | null = null;
 
-      if (profile_?.year === 'Y1') {
+      if (p?.year === 'Y1') {
         const res = await fetchY1TimetableFromCloud();
         cloud = res.lectures;
         updatedAt = res.updatedAt;
@@ -42,7 +48,7 @@ export function useApp() {
 
       if (cloud.length > 0) {
         setLectures(cloud);
-        if (profile_?.year === 'Y1') {
+        if (p?.year === 'Y1') {
           localStorage.setItem(Y1_STORAGE_KEY, JSON.stringify(cloud));
         } else {
           saveTimetable(cloud);
@@ -59,12 +65,13 @@ export function useApp() {
 
   useEffect(() => {
     const init = async () => {
-      const p = loadProfile();
+      const raw = loadProfile();
+      const p = migrateProfile(raw);
+      if (p && !raw?.year) saveProfile(p); // save migration silently
       setProfile(p);
 
       if (p) logStudentActivity(p);
 
-      // Load cache
       if (p?.year === 'Y1') {
         const cached = localStorage.getItem(Y1_STORAGE_KEY);
         if (cached) setLectures(JSON.parse(cached));
@@ -79,7 +86,7 @@ export function useApp() {
     init();
 
     syncTimerRef.current = setInterval(() => {
-      const p = loadProfile();
+      const p = migrateProfile(loadProfile());
       syncFromCloud(p, true);
     }, SYNC_INTERVAL_MS);
 
@@ -127,7 +134,6 @@ export function useApp() {
     try {
       const { lectures: parsed, report } = await parseExcelFile(file);
       if (parsed.length === 0) { setImportReport(report); return; }
-
       saveTimetable(parsed);
       setLectures(parsed);
       const ok = await pushTimetableToCloud(parsed);

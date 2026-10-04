@@ -110,11 +110,21 @@ export function parseAudience(raw: string): NormalizedAudience[] {
 export function isStudentApplicable(
   audiences: NormalizedAudience[],
   specialization: Specialization,
-  minor: Minor
+  minor: Minor,
+  elective?: string
 ): boolean {
   for (const aud of audiences) {
-    if (aud.specialization === 'All') return true;
+    if (aud.specialization === 'All') {
+      // If audience has elective restriction, check it
+      if (aud.elective && elective && aud.elective !== elective) continue;
+      return true;
+    }
     if (aud.specialization === specialization) {
+      if (aud.elective) {
+        // Elective-specific class — only show if student has this elective
+        if (elective && aud.elective === elective) return true;
+        continue;
+      }
       if (!aud.minor) return true;
       if (aud.minor === minor) return true;
     }
