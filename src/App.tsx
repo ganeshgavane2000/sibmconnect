@@ -67,26 +67,50 @@ const handleViewChange = (newView: AppView) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowProfile(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
-            >
-              <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #a78bfa)', color: 'white' }}>
-                {profile.name.charAt(0).toUpperCase()}
-              </div>
-            <p className="text-xs font-medium" style={{ color: '#9ca3af' }}>
-  {profile.name.split(' ')[0]}
-</p>
-<span className="text-xs px-1.5 py-0.5 rounded font-bold ml-1"
-  style={{ background: profile.year === 'Y1' ? 'rgba(52,211,153,0.15)' : 'rgba(99,102,241,0.15)', color: profile.year === 'Y1' ? '#34d399' : '#a78bfa', fontSize: '9px' }}>
-  {profile.year}
-</span>
-          <button
+           
+<button
+  onClick={() => setShowProfile(true)}
+  className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all"
+  style={{
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.07)'
+  }}
+>
+  <div
+    className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+    style={{
+      background: 'linear-gradient(135deg, #6366f1, #a78bfa)',
+      color: 'white'
+    }}
+  >
+    {profile.name.charAt(0).toUpperCase()}
+  </div>
+
+  <p className="text-xs font-medium" style={{ color: '#9ca3af' }}>
+    {profile.name.split(' ')[0]}
+  </p>
+
+  <span
+    className="text-xs px-1.5 py-0.5 rounded font-bold ml-1"
+    style={{
+      background: profile.year === 'Y1'
+        ? 'rgba(52,211,153,0.15)'
+        : 'rgba(99,102,241,0.15)',
+      color: profile.year === 'Y1' ? '#34d399' : '#a78bfa',
+      fontSize: '9px'
+    }}
+  >
+    {profile.year}
+  </span>
+</button>
+
+<button
   onClick={() => setShowAdmin(true)}
   className="w-9 h-9 rounded-full overflow-hidden border-2 transition-all active:scale-95"
-  style={{ borderColor: 'rgba(99,102,241,0.5)', padding: 0 }}
+  style={{
+    borderColor: 'rgba(99,102,241,0.5)',
+    padding: 0
+  }}
   title="Admin"
 >
   <img
@@ -96,10 +120,12 @@ const handleViewChange = (newView: AppView) => {
     onError={(e) => {
       const t = e.target as HTMLImageElement;
       t.style.display = 'none';
-      t.parentElement!.innerHTML = '<span style="font-size:10px;color:#a78bfa;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">G</span>';
+      t.parentElement!.innerHTML =
+        '<span style="font-size:10px;color:#a78bfa;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">G</span>';
     }}
   />
 </button>
+
           </div>
         </div>
 
