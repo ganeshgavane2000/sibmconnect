@@ -83,14 +83,23 @@ const handleViewChange = (newView: AppView) => {
   style={{ background: profile.year === 'Y1' ? 'rgba(52,211,153,0.15)' : 'rgba(99,102,241,0.15)', color: profile.year === 'Y1' ? '#34d399' : '#a78bfa', fontSize: '9px' }}>
   {profile.year}
 </span>
-            </button>
-            <button
-              onClick={() => setShowAdmin(true)}
-              className="text-xs px-3 py-1.5 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280', border: '1px solid rgba(255,255,255,0.07)' }}
-            >
-              Admin?
-            </button>
+          <button
+  onClick={() => setShowAdmin(true)}
+  className="w-9 h-9 rounded-full overflow-hidden border-2 transition-all active:scale-95"
+  style={{ borderColor: 'rgba(99,102,241,0.5)', padding: 0 }}
+  title="Admin"
+>
+  <img
+    src="/admin.jpeg"
+    alt="Admin"
+    className="w-full h-full object-cover"
+    onError={(e) => {
+      const t = e.target as HTMLImageElement;
+      t.style.display = 'none';
+      t.parentElement!.innerHTML = '<span style="font-size:10px;color:#a78bfa;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">G</span>';
+    }}
+  />
+</button>
           </div>
         </div>
 
