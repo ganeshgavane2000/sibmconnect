@@ -10,7 +10,6 @@ export type AppView = 'dashboard' | 'week' | 'exams' | 'mess' | 'bus';
 const SYNC_INTERVAL_MS = 15 * 60 * 1000;
 const Y1_STORAGE_KEY = 'sibm_timetable_y1';
 
-// Fix for existing Y2 users who don't have 'year' in their saved profile
 function migrateProfile(p: StudentProfile | null): StudentProfile | null {
   if (!p) return null;
   if (!p.year) return { ...p, year: 'Y2' as Year, elective: 'None' };
@@ -33,9 +32,8 @@ export function useApp() {
   const syncFromCloud = useCallback(async (p?: StudentProfile | null, silent = false) => {
     if (!silent) setSyncing(true);
     try {
-      let cloud: any[] = [];
+      let cloud: Lecture[] = [];
       let updatedAt: string | null = null;
-
       if (p?.year === 'Y1') {
         const res = await fetchY1TimetableFromCloud();
         cloud = res.lectures;
@@ -45,14 +43,10 @@ export function useApp() {
         cloud = res.lectures;
         updatedAt = res.updatedAt;
       }
-
       if (cloud.length > 0) {
         setLectures(cloud);
-        if (p?.year === 'Y1') {
-          localStorage.setItem(Y1_STORAGE_KEY, JSON.stringify(cloud));
-        } else {
-          saveTimetable(cloud);
-        }
+        if (p?.year === 'Y1') localStorage.setItem(Y1_STORAGE_KEY, JSON.stringify(cloud));
+        else saveTimetable(cloud);
         if (updatedAt) setLastSyncTime(updatedAt);
         setCloudError(null);
       }
@@ -64,12 +58,13 @@ export function useApp() {
   }, []);
 
   useEffect(() => {
+    let active = true;
     const init = async () => {
       const raw = loadProfile();
       const p = migrateProfile(raw);
-      if (p && !raw?.year) saveProfile(p); // save migration silently
+      if (p && !raw?.year) saveProfile(p);
+      if (!active) return;
       setProfile(p);
-
       if (p) logStudentActivity(p);
 
       if (p?.year === 'Y1') {
@@ -80,31 +75,35 @@ export function useApp() {
         if (cached.length > 0) setLectures(cached);
       }
 
+      // Render cached data immediately; cloud refresh continues without blocking the app.
+      if (active) setLoading(false);
       await syncFromCloud(p);
-      setLoading(false);
     };
-    init();
+    void init();
 
     syncTimerRef.current = setInterval(() => {
       const p = migrateProfile(loadProfile());
-      syncFromCloud(p, true);
+      void syncFromCloud(p, true);
     }, SYNC_INTERVAL_MS);
 
-    return () => { if (syncTimerRef.current) clearInterval(syncTimerRef.current); };
-  }, []);
+    return () => {
+      active = false;
+      if (syncTimerRef.current) clearInterval(syncTimerRef.current);
+    };
+  }, [syncFromCloud]);
 
   const handleOnboarding = useCallback((p: StudentProfile) => {
     saveProfile(p);
     setProfile(p);
     logStudentActivity(p);
-    syncFromCloud(p);
+    void syncFromCloud(p);
   }, [syncFromCloud]);
 
   const handleProfileUpdate = useCallback((p: StudentProfile) => {
     saveProfile(p);
     setProfile(p);
     logStudentActivity(p);
-    syncFromCloud(p);
+    void syncFromCloud(p);
   }, [syncFromCloud]);
 
   const syncFromSheets = useCallback(async (): Promise<ParseReport> => {
