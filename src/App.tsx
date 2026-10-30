@@ -11,7 +11,16 @@ import { BottomNav } from './components/BottomNav';
 import { ProfileEditor } from './components/ProfileEditor';
 import { format } from 'date-fns';
 
-type IntroStage = 'hello' | 'welcome' | 'exit';
+type IntroStage = 'hello' | 'brand' | 'exit';
+
+// Start loading the intro font as early as possible
+if (typeof document !== 'undefined' && !document.getElementById('sibm-intro-fonts')) {
+  const l = document.createElement('link');
+  l.id = 'sibm-intro-fonts';
+  l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@500;600;700;800&display=swap';
+  document.head.appendChild(l);
+}
 
 function App() {
   const {
@@ -30,17 +39,31 @@ function App() {
     if (!profile || loading) return;
     const sessionKey = 'sibm-connect-intro-shown';
     if (sessionStorage.getItem(sessionKey)) return;
-
     sessionStorage.setItem(sessionKey, '1');
-    setIntroStage('hello');
-    const welcomeTimer = window.setTimeout(() => setIntroStage('welcome'), 1350);
-    const exitTimer = window.setTimeout(() => setIntroStage('exit'), 2950);
-    const finishTimer = window.setTimeout(() => setIntroStage(null), 3850);
+
+    let cancelled = false;
+    const timers: number[] = [];
+
+    const start = () => {
+      if (cancelled) return;
+      setIntroStage('hello');
+      timers.push(window.setTimeout(() => setIntroStage('brand'), 1350));
+      timers.push(window.setTimeout(() => setIntroStage('exit'), 2350));
+      timers.push(window.setTimeout(() => setIntroStage(null), 3000));
+    };
+
+    // Wait briefly for the script font so the intro never flashes a fallback font
+    const fontReady: Promise<unknown> = document.fonts && document.fonts.load
+      ? Promise.race([
+          document.fonts.load('64px "Great Vibes"'),
+          new Promise(resolve => window.setTimeout(resolve, 700)),
+        ])
+      : Promise.resolve();
+    fontReady.then(start, start);
 
     return () => {
-      window.clearTimeout(welcomeTimer);
-      window.clearTimeout(exitTimer);
-      window.clearTimeout(finishTimer);
+      cancelled = true;
+      timers.forEach(t => window.clearTimeout(t));
     };
   }, [profile, loading]);
 
@@ -58,6 +81,8 @@ function App() {
   }
 
   if (!profile) return <Onboarding onComplete={handleOnboarding} />;
+
+  const firstName = profile.name.trim().split(/\s+/)[0];
 
   return (
     <div className="min-h-screen relative">
@@ -141,48 +166,106 @@ function App() {
       {showProfile && <ProfileEditor profile={profile} onSave={handleProfileUpdate} onClose={() => setShowProfile(false)} />}
 
       {introStage && (
-        <div className={`welcome-overlay welcome-${introStage}`} aria-live="polite">
-          <div className="welcome-watermark" />
-          <div className="welcome-copy">
-            {introStage === 'hello'
-              ? <>Hello, {profile.name.trim().split(/\s+/)[0]}.</>
-              : <>Welcome to <span>SIBM Connect.</span></>}
+        <div className={`intro is-${introStage}`} onClick={() => setIntroStage(null)} aria-live="polite">
+          <div className="intro-orb intro-orb-a" />
+          <div className="intro-orb intro-orb-b" />
+
+          <div className="intro-stage intro-hello">
+            <div className="intro-script">Hello</div>
+            <div className="intro-name">{firstName}</div>
+          </div>
+
+          <div className="intro-stage intro-brand">
+            <div className="intro-mark">S</div>
+            <div className="intro-welcome">Welcome to</div>
+            <div className="intro-title">SIBM Connect</div>
+            <div className="intro-copy">
+              Copyright © 2025-2027<br />
+              Developed by Ganesh Gavane. All rights reserved.
+            </div>
           </div>
         </div>
       )}
 
       <style>{`
-        .welcome-overlay {
-          position: fixed; inset: 0; z-index: 100; display: flex;
-          align-items: center; justify-content: center; overflow: hidden;
-          background: #080b14; color: #f7f7fa;
-          font-family: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", sans-serif;
-          animation: welcomeFadeIn .55s ease both;
+        .intro {
+          position: fixed; inset: 0; z-index: 100; overflow: hidden;
+          display: flex; align-items: center; justify-content: center;
+          background: #05070d; color: #f5f5f7; cursor: pointer;
+          font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif;
+          -webkit-tap-highlight-color: transparent;
+          animation: introIn .35s ease both;
         }
-        .welcome-watermark {
-          position: absolute; inset: -24px;
-          background-image: linear-gradient(rgba(8,11,20,.87), rgba(8,11,20,.91)), url('/admin.jpeg');
-          background-size: cover; background-position: center 35%;
-          filter: blur(3px) grayscale(25%); opacity: .22; transform: scale(1.04);
+        .intro-orb { position: absolute; border-radius: 50%; filter: blur(64px); opacity: 0; animation: introOrb 2.6s ease-out forwards; }
+        .intro-orb-a { width: 340px; height: 340px; background: #6366f1; top: 10%; left: -10%; }
+        .intro-orb-b { width: 300px; height: 300px; background: #a78bfa; bottom: 8%; right: -12%; animation-delay: .15s; }
+
+        .intro-stage {
+          position: absolute; inset: 0; padding: 24px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+          transition: opacity .55s cubic-bezier(.4,0,.2,1), transform .75s cubic-bezier(.2,.8,.2,1), filter .55s ease;
         }
-        .welcome-copy {
-          position: relative; z-index: 1; padding: 28px; text-align: center;
-          font-size: clamp(30px, 7vw, 39px); line-height: 1.16;
-          letter-spacing: -.045em; font-weight: 600;
-          animation: welcomeTextIn .8s cubic-bezier(.2,.75,.25,1) both;
+
+        /* Stage 1: handwritten Hello + name */
+        .intro-script {
+          font-family: 'Great Vibes', 'Snell Roundhand', 'Apple Chancery', cursive;
+          font-size: clamp(76px, 22vw, 112px); line-height: 1.1; padding: .1em .15em;
+          background: linear-gradient(100deg, #ffffff 15%, #c4b5fd 55%, #818cf8 92%);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent; color: transparent;
+          filter: drop-shadow(0 6px 30px rgba(129,140,248,.45));
+          clip-path: inset(-20% 100% -20% -5%);
+          animation: introWrite 1.05s cubic-bezier(.65,0,.25,1) .12s forwards;
         }
-        .welcome-copy span { font-weight: 700; }
-        .welcome-exit { animation: welcomeFadeOut .85s ease forwards; }
-        .welcome-exit .welcome-copy { animation: welcomeTextOut .7s ease forwards; }
-        @keyframes welcomeFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes welcomeFadeOut { to { opacity: 0; visibility: hidden; } }
-        @keyframes welcomeTextIn {
-          from { opacity: 0; transform: translateY(13px); filter: blur(5px); }
-          to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        .intro-name {
+          margin-top: 2px; font-size: clamp(30px, 8.5vw, 40px); font-weight: 600; letter-spacing: -.035em;
+          opacity: 0; transform: translateY(12px); filter: blur(6px);
+          animation: introRise .7s cubic-bezier(.2,.8,.2,1) .8s forwards;
         }
-        @keyframes welcomeTextOut { to { opacity: 0; transform: translateY(-8px); filter: blur(4px); } }
+
+        /* Stage 2: logo + Welcome to SIBM Connect + copyright */
+        .intro-mark {
+          width: 72px; height: 72px; border-radius: 20px; margin-bottom: 18px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 36px; font-weight: 800; color: #fff;
+          background: linear-gradient(135deg, #6366f1, #a78bfa);
+          box-shadow: 0 18px 50px rgba(99,102,241,.45), inset 0 1px 0 rgba(255,255,255,.35);
+        }
+        .intro-welcome {
+          font-size: clamp(22px, 6vw, 28px); font-weight: 500;
+          letter-spacing: -.02em; color: #c7c9d1; margin-bottom: 6px;
+        }
+        .intro-title {
+          font-size: clamp(40px, 11vw, 54px); font-weight: 800; letter-spacing: -.045em; line-height: 1.1;
+          background: linear-gradient(100deg, #ffffff 20%, #c4b5fd 60%, #818cf8);
+          -webkit-background-clip: text; background-clip: text;
+          -webkit-text-fill-color: transparent; color: transparent;
+        }
+        .intro-copy {
+          position: absolute; left: 0; right: 0;
+          bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+          padding: 0 24px; font-size: 11px; line-height: 1.6;
+          letter-spacing: .04em; color: #6b7280; font-weight: 500;
+        }
+
+        /* Stage choreography */
+        .is-hello .intro-brand { opacity: 0; transform: scale(.92); filter: blur(10px); }
+        .is-brand .intro-hello, .is-exit .intro-hello { opacity: 0; transform: translateY(-14px) scale(1.05); filter: blur(8px); }
+        .is-brand .intro-brand { opacity: 1; transform: scale(1); filter: blur(0); }
+        .is-exit .intro-brand { opacity: 0; transform: scale(1.14); filter: blur(6px); }
+        .is-exit { animation: introOut .6s ease forwards; }
+
+        @keyframes introIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes introOut { to { opacity: 0; visibility: hidden; } }
+        @keyframes introOrb { 0% { opacity: 0; transform: translateY(20px); } 40% { opacity: .35; } 100% { opacity: .2; transform: translateY(-10px); } }
+        @keyframes introWrite { to { clip-path: inset(-20% -5% -20% -5%); } }
+        @keyframes introRise { to { opacity: 1; transform: none; filter: blur(0); } }
+
         @media (prefers-reduced-motion: reduce) {
-          .welcome-overlay, .welcome-copy { animation-duration: .01ms !important; }
+          .intro, .intro-orb { animation-duration: .01ms !important; }
+          .intro-script { animation: none; clip-path: none; }
+          .intro-name { animation: none; opacity: 1; transform: none; filter: none; }
+          .intro-stage { transition-duration: .01ms; }
         }
       `}</style>
     </div>
