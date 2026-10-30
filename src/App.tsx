@@ -46,10 +46,10 @@ function App() {
 
     const start = () => {
       if (cancelled) return;
-      setIntroStage('hello');
-      timers.push(window.setTimeout(() => setIntroStage('brand'), 1350));
-      timers.push(window.setTimeout(() => setIntroStage('exit'), 2350));
-      timers.push(window.setTimeout(() => setIntroStage(null), 3000));
+          setIntroStage('hello');
+      timers.push(window.setTimeout(() => setIntroStage(s => (s ? 'brand' : null)), 1350));
+      timers.push(window.setTimeout(() => setIntroStage(s => (s ? 'exit' : null)), 3350));
+      timers.push(window.setTimeout(() => setIntroStage(null), 4000));
     };
 
     // Wait briefly for the script font so the intro never flashes a fallback font
